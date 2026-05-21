@@ -4,10 +4,11 @@ import os
 from dotenv import load_dotenv
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+# from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 
 load_dotenv()
 
@@ -21,11 +22,14 @@ docs = loader.load()
 text_splitter = RecursiveCharacterTextSplitter()
 chunks = text_splitter.split_documents(docs)
 
-# 中文嵌入模型
-embeddings = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-small-zh-v1.5",
-    model_kwargs={'device': 'cpu'},
-    encode_kwargs={'normalize_embeddings': True}
+# 文本嵌入模型
+embeddings = OpenAIEmbeddings(
+    model=os.getenv("EMBEDDING_MODEL"),
+    api_key=os.getenv("OPENAI_API_KEY"),
+    # With the `text-embedding-3` class
+    # of models, you can specify the size
+    # of the embeddings you want returned.
+    # dimensions=1024
 )
   
 # 构建向量存储
@@ -49,11 +53,10 @@ prompt = ChatPromptTemplate.from_template("""请根据下面提供的上下文�
 
 # 使用 AIHubmix
 llm = ChatOpenAI(
-    model="glm-4.7-flash-free",
-    temperature=0.7,
-    max_tokens=4096,
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url="https://aihubmix.com/v1"
+    model=os.getenv("LLM"),
+    temperature=float(os.getenv("TEMPERATURE")),
+    api_key=os.getenv("DASHSCOPE_API_KEY"),
+    base_url=os.getenv("BASE_URL")
 )
 
 # llm = ChatOpenAI(
@@ -73,3 +76,9 @@ docs_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
 
 answer = llm.invoke(prompt.format(question=question, context=docs_content))
 print(answer)
+
+
+"""
+(all-in-rag) PS D:\project\LearnAgent\all-in-rag\code\C1> python.exe .\01_langchain_example.py
+content='文中举了以下例子：\n\n- **监督学习对比例子**：图片分类（如区分汽车、飞机、椅子等）。\n- **强化学习游戏例子**：雅达利游戏 Breakout（打砖块）、雅达利游戏 Pong。\n- **现实生活中的强化学习例子**：自然界中的羚羊通过试错学会站立和奔跑、股票交 易、玩雅达利或其他电脑游戏。\n- **超人类表现的例子**：DeepMind 的 AlphaGo 打败人类顶尖棋手。\n- **Gym 实验环境例子**：\n  - Taxi-v3（用于展示代码框架）\n  - 经典控制问题：Acrobot（双连杆机器人）、CartPole（小车倒立摆）、MountainCar（小车上山）\n  - 详细交互示例：MountainCar-v0、CartPole-v0\n- **单步强化学习任务例子**：K-臂赌博机（多臂赌博机）。' additional_kwargs={'refusal': None} response_metadata={'token_usage': {'completion_tokens': 800, 'prompt_tokens': 5429, 'total_tokens': 6229, 'completion_tokens_details': {'accepted_prediction_tokens': None, 'audio_tokens': None, 'reasoning_tokens': 600, 'rejected_prediction_tokens': None}, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0}}, 'model_name': 'deepseek-v4-pro', 'system_fingerprint': None, 'id': 'chatcmpl-d887b613-a5ee-9ec7-8436-ea475e5c8679', 'service_tier': None, 'finish_reason': 'stop', 'logprobs': None} id='run--85323489-af09-4321-b9a3-7d8f694f6361-0' usage_metadata={'input_tokens': 5429, 'output_tokens': 800, 'total_tokens': 6229, 'input_token_details': {'cache_read': 0}, 'output_token_details': {'reasoning': 600}}
+"""
