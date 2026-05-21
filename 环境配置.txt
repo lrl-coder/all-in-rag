@@ -1,0 +1,4 @@
+conda create --name all-in-rag python=3.12.7
+conda activate all-in-rag
+cd code
+pip install -r requirements.txt
