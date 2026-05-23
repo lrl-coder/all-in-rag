@@ -1,3 +1,6 @@
+import os
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.documents import Document
@@ -35,3 +38,7 @@ print(f"\n查询: '{query}'")
 print("相似度最高的文档:")
 for doc in results:
     print(f"- {doc.page_content}")
+
+# 查询: 'FAISS是做什么的？'
+# 相似度最高的文档:
+# - FAISS是一个用于高效相似性搜索和密集向量聚类的库。
