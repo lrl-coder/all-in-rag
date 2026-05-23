@@ -34,3 +34,13 @@ for i, node in enumerate(nodes):
     print(f"[结果 {i+1}] 相似度得分: {node.score:.4f}")
     print(f"  文本: {node.text}")
     print()
+
+# LlamaIndex 索引已保存至: ./llamaindex_index_store
+
+# 查询: 张三是谁？
+# ----------------------------------------
+# [结果 1] 相似度得分: 0.6501
+#   文本: 张三是法外狂徒
+
+# [结果 2] 相似度得分: 0.2430
+#   文本: LlamaIndex是一个用于构建和查询私有或领域特定数据的框架。
