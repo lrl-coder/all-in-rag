@@ -1,4 +1,7 @@
+# 重要：pip install "mistralai<2.0"
+
 import os
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 import pandas as pd
 from dotenv import load_dotenv
 from llama_index.core import VectorStoreIndex
@@ -13,7 +16,7 @@ from llama_index.core import Settings
 load_dotenv()
 
 # 配置模型
-Settings.llm = DeepSeek(model="deepseek-chat", api_key=os.getenv("DEEPSEEK_API_KEY"))
+Settings.llm = DeepSeek(model="deepseek-v4-flash", api_key=os.getenv("DEEPSEEK_API_KEY"))
 Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-zh-v1.5")
 
 # 1.加载数据并为每个工作表创建查询引擎和摘要节点
@@ -61,3 +64,20 @@ query = "1994年评分人数最少的电影是哪一部？"
 print(f"查询: {query}")
 response = query_engine.query(query)
 print(f"回答: {response}")
+
+# Loaded 1 prompt with these keys: ['query']
+# 查询: 1994年评分人数最少的电影是哪一部？
+# Retrieving with query id None: 1994年评分人数最少的电影是哪一部？
+# Retrieved node with id, entering: 年份_1994
+# Retrieving with query id 年份_1994: 1994年评分人数最少的电影是哪一部？
+# INFO:httpx:HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+# HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+# > Pandas Instructions:
+# ```
+# df.loc[df[df['年份'] == 1994]['评分人数'].idxmin(), '电影名称']
+# ```
+# > Pandas Output: 燃情岁月
+# Got response: 燃情岁月
+# INFO:httpx:HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+# HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+# 回答: 燃情岁月
