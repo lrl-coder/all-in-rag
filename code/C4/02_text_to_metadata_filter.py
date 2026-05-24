@@ -139,3 +139,26 @@ for query in queries:
             print("="*50)
     else:
         print("未找到匹配的视频")
+
+# --- 查询: '时间最短的视频' ---
+# INFO:httpx:HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+# INFO:langchain.retrievers.self_query.base:Generated Query: query=' ' filter=None limit=1
+# 标题: 《吴恩达 x OpenAI Prompt课程》【专业翻译，配套代码笔记】03.Prompt如何迭代优化
+# 作者: 二次元的Datawhale
+# 观看次数: 8074
+# 时长: 806秒
+# ==================================================
+
+# --- 查询: '时长大于600秒的视频' ---
+# INFO:httpx:HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+# INFO:langchain.retrievers.self_query.base:Generated Query: query=' ' filter=Comparison(comparator=<Comparator.GT: 'gt'>, attribute='length', value=600) limit=None
+# 标题: 《吴恩达 x OpenAI Prompt课程》【专业翻译，配套代码笔记】03.Prompt如何迭代优化
+# 作者: 二次元的Datawhale
+# 观看次数: 8074
+# 时长: 806秒
+# ==================================================
+# 标题: 《吴恩达 x OpenAI Prompt课程》【专业翻译，配套代码笔记】02.Prompt 的构建原则
+# 作者: 二次元的Datawhale
+# 观看次数: 21061
+# 时长: 1063秒
+# ==================================================
