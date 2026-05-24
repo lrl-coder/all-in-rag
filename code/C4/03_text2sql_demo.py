@@ -10,6 +10,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'text2sql'))
 
 from text2sql.text2sql_agent import SimpleText2SQLAgent
 
+# 自然语言 to sql 的核心：
+# 1. 提供数据库模式：如建表语句，这就像是给了LLM一张地图，让它了解数据库的结构，包括表名、列名、数据类型和外键关系。
+# 2. 提供每一个表的描述，包括对表中各个字段的描述和数据类型
+# 3. 提供few-shot示例，给一些从自然语言到sql语句的示例，供llm学习
 
 def setup_demo():
     """设置演示环境"""
