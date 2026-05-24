@@ -4,6 +4,15 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_deepseek import ChatDeepSeek
 from langchain_core.runnables import RunnableBranch
 
+from dotenv import load_dotenv
+load_dotenv()
+
+from langchain.globals import set_debug, set_verbose
+
+set_debug(True)
+set_verbose(True)
+
+
 llm = ChatDeepSeek(
     model="deepseek-chat", 
     temperature=0, 
