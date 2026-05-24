@@ -50,7 +50,8 @@ class SimpleText2SQLAgent:
         # 1. 从知识库检索
         print("检索知识库...")
         knowledge_results = self.knowledge_base.search(user_question, self.top_k_retrieval)
-        print(f"检索到 {len(knowledge_results)} 条相关信息")
+        print(f"检索到 {len(knowledge_results)} 条相关信息:")
+        print(knowledge_results)
         
         # 2. 生成SQL
         print("生成SQL...")

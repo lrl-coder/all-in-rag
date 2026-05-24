@@ -2,6 +2,9 @@ import os
 import sys
 import sqlite3
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # 添加text2sql模块路径
 sys.path.append(os.path.join(os.path.dirname(__file__), 'text2sql'))
 

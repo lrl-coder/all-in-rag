@@ -9,7 +9,7 @@ class SimpleSQLGenerator:
     
     def __init__(self, api_key: str = None):
         self.llm = ChatDeepSeek(
-            model="deepseek-chat",
+            model="deepseek-v4-pro",
             temperature=0,
             api_key=api_key or os.getenv("DEEPSEEK_API_KEY")
         )
