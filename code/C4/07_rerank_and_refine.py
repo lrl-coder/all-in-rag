@@ -16,6 +16,9 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 import torch.nn.functional as F
 
+from dotenv import load_dotenv
+load_dotenv()
+
 class ColBERTReranker(BaseDocumentCompressor):
     """ColBERT重排器"""
 
