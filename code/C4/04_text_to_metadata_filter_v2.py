@@ -7,6 +7,23 @@ from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 import logging
 
+from dotenv import load_dotenv
+load_dotenv()
+
+# 加载BiliBili视频失败: 400, message:
+#   Can not decode content-encoding: br
+# 没有成功加载任何视频，程序退出
+# 报错的核心原因出：B 站返回了 br Brotli 压缩内容，aiohttp 试图解压，但你环境里的 Brotli 解压实现和 aiohttp 版本不兼容。
+
+from bilibili_api.utils import network as bilibili_network
+
+for header_name in list(bilibili_network.HEADERS):
+    if header_name.lower() == "accept-encoding":
+        bilibili_network.HEADERS[header_name] = "gzip, deflate"
+        break
+else:
+    bilibili_network.HEADERS["Accept-Encoding"] = "gzip, deflate"
+
 logging.basicConfig(level=logging.INFO)
 
 # 1. 初始化视频数据
