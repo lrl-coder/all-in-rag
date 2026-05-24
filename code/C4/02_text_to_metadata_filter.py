@@ -9,8 +9,18 @@ from langchain_huggingface import HuggingFaceEmbeddings
 import logging
 from dotenv import load_dotenv
 from bilibili_api.utils.sync import sync
+from pprint import pprint
 
 load_dotenv()
+
+"""
+自查询检索（langchain）的流程：
+1. 定义元数据结构 -> llm，向LLM清晰地描述文档内容和每个元数据字段的含义及类型。
+2. 查询解析：当用户输入一个自然语言查询时，自检索器会调用llm，将查询分解为两部分：
+    a. 查询字符串：用于进行语义搜索
+    b. 元数据过滤器：从用户的自然语言查询中提取出的结构化过滤条件
+3. 执行查询：检索器将解析出的查询字符串和元数据过滤器发送给向量数据库，执行一次同时包含语义搜索和元数据过滤的查询。
+"""
 
 # 加载BiliBili视频失败: 400, message:
 #   Can not decode content-encoding: br
@@ -50,6 +60,7 @@ try:
     
     for doc in docs:
         original = doc.metadata
+        # pprint(f'提取到的元数据：{original}')
         
         # 提取基本元数据字段
         metadata = {
@@ -103,7 +114,7 @@ metadata_field_info = [
 
 # 4. 创建自查询检索器
 llm = ChatDeepSeek(
-    model="deepseek-chat", 
+    model="deepseek-v4-pro", 
     temperature=0, 
     api_key=os.getenv("DEEPSEEK_API_KEY")
     )
@@ -111,7 +122,7 @@ llm = ChatDeepSeek(
 retriever = SelfQueryRetriever.from_llm(
     llm=llm,
     vectorstore=vectorstore,
-    document_contents="记录视频标题、作者、观看次数等信息的视频元数据",
+    document_contents="记录视频标题、作者、观看次数、视频时长等信息的视频元数据",
     metadata_field_info=metadata_field_info,
     enable_limit=True,
     verbose=True
@@ -125,7 +136,7 @@ queries = [
 
 for query in queries:
     print(f"\n--- 查询: '{query}' ---")
-    results = retriever.invoke(query)
+    results = retriever.invoke(f'请根据元数据信息，查询时要注意数据类型，查询{query}')
     if results:
         for doc in results:
             title = doc.metadata.get('title', '未知标题')
