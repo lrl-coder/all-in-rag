@@ -7,6 +7,9 @@ from langchain_core.runnables import RunnableLambda, RunnablePassthrough, Runnab
 from langchain_community.utils.math import cosine_similarity
 import numpy as np
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # 1. 定义路由描述
 sichuan_route_prompt = "你是一位处理川菜的专家。用户的问题是关于麻辣、辛香、重口味的菜肴，例如水煮鱼、麻婆豆腐、鱼香肉丝、宫保鸡丁、花椒、海椒等。"
 cantonese_route_prompt = "你是一位处理粤菜的专家。用户的问题是关于清淡、鲜美、原汁原味的菜肴，例如白切鸡、老火靓汤、虾饺、云吞面等。"
