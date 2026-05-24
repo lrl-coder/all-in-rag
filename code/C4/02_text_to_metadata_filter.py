@@ -1,4 +1,5 @@
 import os
+import traceback
 from langchain_deepseek import ChatDeepSeek 
 from langchain_community.document_loaders import BiliBiliLoader
 from langchain.chains.query_constructor.base import AttributeInfo
@@ -6,8 +7,34 @@ from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 import logging
+from dotenv import load_dotenv
+from bilibili_api.utils.sync import sync
+
+load_dotenv()
+
+# 加载BiliBili视频失败: 400, message:
+#   Can not decode content-encoding: br
+# 没有成功加载任何视频，程序退出
+# 报错的核心原因出：B 站返回了 br Brotli 压缩内容，aiohttp 试图解压，但你环境里的 Brotli 解压实现和 aiohttp 版本不兼容。
+
+from bilibili_api.utils import network as bilibili_network
+
+for header_name in list(bilibili_network.HEADERS):
+    if header_name.lower() == "accept-encoding":
+        bilibili_network.HEADERS[header_name] = "gzip, deflate"
+        break
+else:
+    bilibili_network.HEADERS["Accept-Encoding"] = "gzip, deflate"
+
 
 logging.basicConfig(level=logging.INFO)
+
+
+def close_bilibili_client():
+    try:
+        sync(bilibili_network.get_client().close())
+    except Exception as e:
+        logging.warning("关闭 BiliBili HTTP 客户端失败: %s", e)
 
 # 1. 初始化视频数据
 video_urls = [
@@ -37,7 +64,10 @@ try:
         bili.append(doc)
         
 except Exception as e:
-    print(f"加载BiliBili视频失败: {str(e)}")
+    print(f"加载BiliBili视频失败: {type(e).__name__}: {e!r}")
+    traceback.print_exc()
+finally:
+    close_bilibili_client()
 
 if not bili:
     print("没有成功加载任何视频，程序退出")
