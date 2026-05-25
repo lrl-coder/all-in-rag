@@ -6,18 +6,21 @@ import os
 import logging
 from typing import List
 
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_community.chat_models.moonshot import MoonshotChat
 from langchain_core.documents import Document
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
 class GenerationIntegrationModule:
     """生成集成模块 - 负责LLM集成和回答生成"""
     
-    def __init__(self, model_name: str = "kimi-k2-0711-preview", temperature: float = 0.1, max_tokens: int = 2048):
+    def __init__(
+        self,
+        model_name: str = "deepseek-v4-pro",
+        temperature: float = 0.1,
+        max_tokens: int = 2048,
+        api_base: str = "https://api.deepseek.com"
+    ):
         """
         初始化生成集成模块
         
@@ -25,29 +28,52 @@ class GenerationIntegrationModule:
             model_name: 模型名称
             temperature: 生成温度
             max_tokens: 最大token数
+            api_base: DeepSeek API地址
         """
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.llm = None
+        self.api_base = api_base
+        self.client = None
         self.setup_llm()
     
     def setup_llm(self):
         """初始化大语言模型"""
         logger.info(f"正在初始化LLM: {self.model_name}")
 
-        api_key = os.getenv("MOONSHOT_API_KEY")
+        api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
-            raise ValueError("请设置 MOONSHOT_API_KEY 环境变量")
+            raise ValueError("请设置 DEEPSEEK_API_KEY 环境变量")
 
-        self.llm = MoonshotChat(
+        self.client = OpenAI(api_key=api_key, base_url=self.api_base)
+        
+        logger.info("DeepSeek LLM初始化完成")
+
+    def _chat(self, prompt: str) -> str:
+        """调用DeepSeek并返回完整文本。"""
+        response = self.client.chat.completions.create(
             model=self.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=self.temperature,
+            max_tokens=self.max_tokens
+        )
+        return response.choices[0].message.content or ""
+
+    def _chat_stream(self, prompt: str):
+        """调用DeepSeek并逐块返回文本。"""
+        stream = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[{"role": "user", "content": prompt}],
             temperature=self.temperature,
             max_tokens=self.max_tokens,
-            moonshot_api_key=api_key
+            stream=True
         )
-        
-        logger.info("LLM初始化完成")
+        for chunk in stream:
+            if not chunk.choices:
+                continue
+            content = chunk.choices[0].delta.content
+            if content:
+                yield content
     
     def generate_basic_answer(self, query: str, context_docs: List[Document]) -> str:
         """
@@ -62,27 +88,19 @@ class GenerationIntegrationModule:
         """
         context = self._build_context(context_docs)
 
-        prompt = ChatPromptTemplate.from_template("""
+        prompt = f"""
 你是一位专业的烹饪助手。请根据以下食谱信息回答用户的问题。
 
-用户问题: {question}
+用户问题: {query}
 
 相关食谱信息:
 {context}
 
 请提供详细、实用的回答。如果信息不足，请诚实说明。
 
-回答:""")
+回答:"""
 
-        # 使用LCEL构建链
-        chain = (
-            {"question": RunnablePassthrough(), "context": lambda _: context}
-            | prompt
-            | self.llm
-            | StrOutputParser()
-        )
-
-        response = chain.invoke(query)
+        response = self._chat(prompt)
         return response
     
     def generate_step_by_step_answer(self, query: str, context_docs: List[Document]) -> str:
@@ -98,10 +116,10 @@ class GenerationIntegrationModule:
         """
         context = self._build_context(context_docs)
 
-        prompt = ChatPromptTemplate.from_template("""
+        prompt = f"""
 你是一位专业的烹饪导师。请根据食谱信息，为用户提供详细的分步骤指导。
 
-用户问题: {question}
+用户问题: {query}
 
 相关食谱信息:
 {context}
@@ -126,16 +144,9 @@ class GenerationIntegrationModule:
 - 重点突出实用性和可操作性
 - 如果没有额外的技巧要分享，可以省略制作技巧部分
 
-回答:""")
+回答:"""
 
-        chain = (
-            {"question": RunnablePassthrough(), "context": lambda _: context}
-            | prompt
-            | self.llm
-            | StrOutputParser()
-        )
-
-        response = chain.invoke(query)
+        response = self._chat(prompt)
         return response
     
     def query_rewrite(self, query: str) -> str:
@@ -148,8 +159,7 @@ class GenerationIntegrationModule:
         Returns:
             重写后的查询或原查询
         """
-        prompt = PromptTemplate(
-            template="""
+        prompt = f"""
 你是一个智能查询分析助手。请分析用户的查询，判断是否需要重写以提高食谱搜索效果。
 
 原始查询: {query}
@@ -179,18 +189,9 @@ class GenerationIntegrationModule:
 - "宫保鸡丁怎么做" → "宫保鸡丁怎么做"（保持原查询）
 - "红烧肉需要什么食材" → "红烧肉需要什么食材"（保持原查询）
 
-请输出最终查询（如果不需要重写就返回原查询）:""",
-            input_variables=["query"]
-        )
+请输出最终查询（如果不需要重写就返回原查询）:"""
 
-        chain = (
-            {"query": RunnablePassthrough()}
-            | prompt
-            | self.llm
-            | StrOutputParser()
-        )
-
-        response = chain.invoke(query).strip()
+        response = self._chat(prompt).strip()
 
         # 记录重写结果
         if response != query:
@@ -212,7 +213,7 @@ class GenerationIntegrationModule:
         Returns:
             路由类型 ('list', 'detail', 'general')
         """
-        prompt = ChatPromptTemplate.from_template("""
+        prompt = f"""
 根据用户的问题，将其分类为以下三种类型之一：
 
 1. 'list' - 用户想要获取菜品列表或推荐，只需要菜名
@@ -228,16 +229,9 @@ class GenerationIntegrationModule:
 
 用户问题: {query}
 
-分类结果:""")
+分类结果:"""
 
-        chain = (
-            {"query": RunnablePassthrough()}
-            | prompt
-            | self.llm
-            | StrOutputParser()
-        )
-
-        result = chain.invoke(query).strip().lower()
+        result = self._chat(prompt).strip().lower()
 
         # 确保返回有效的路由类型
         if result in ['list', 'detail', 'general']:
@@ -287,26 +281,19 @@ class GenerationIntegrationModule:
         """
         context = self._build_context(context_docs)
 
-        prompt = ChatPromptTemplate.from_template("""
+        prompt = f"""
 你是一位专业的烹饪助手。请根据以下食谱信息回答用户的问题。
 
-用户问题: {question}
+用户问题: {query}
 
 相关食谱信息:
 {context}
 
 请提供详细、实用的回答。如果信息不足，请诚实说明。
 
-回答:""")
+回答:"""
 
-        chain = (
-            {"question": RunnablePassthrough(), "context": lambda _: context}
-            | prompt
-            | self.llm
-            | StrOutputParser()
-        )
-
-        for chunk in chain.stream(query):
+        for chunk in self._chat_stream(prompt):
             yield chunk
 
     def generate_step_by_step_answer_stream(self, query: str, context_docs: List[Document]):
@@ -322,10 +309,10 @@ class GenerationIntegrationModule:
         """
         context = self._build_context(context_docs)
 
-        prompt = ChatPromptTemplate.from_template("""
+        prompt = f"""
 你是一位专业的烹饪导师。请根据食谱信息，为用户提供详细的分步骤指导。
 
-用户问题: {question}
+用户问题: {query}
 
 相关食谱信息:
 {context}
@@ -349,16 +336,9 @@ class GenerationIntegrationModule:
 - 不要强行填充无关内容
 - 重点突出实用性和可操作性
 
-回答:""")
+回答:"""
 
-        chain = (
-            {"question": RunnablePassthrough(), "context": lambda _: context}
-            | prompt
-            | self.llm
-            | StrOutputParser()
-        )
-
-        for chunk in chain.stream(query):
+        for chunk in self._chat_stream(prompt):
             yield chunk
 
     def _build_context(self, docs: List[Document], max_length: int = 2000) -> str:

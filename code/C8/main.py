@@ -12,6 +12,10 @@ from typing import List
 sys.path.append(str(Path(__file__).parent))
 
 from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
+
 from config import DEFAULT_CONFIG, RAGConfig
 from rag_modules import (
     DataPreparationModule,
@@ -19,9 +23,6 @@ from rag_modules import (
     RetrievalOptimizationModule,
     GenerationIntegrationModule
 )
-
-# 加载环境变量
-load_dotenv()
 
 # 配置日志
 logging.basicConfig(
@@ -51,8 +52,8 @@ class RecipeRAGSystem:
             raise FileNotFoundError(f"数据路径不存在: {self.config.data_path}")
 
         # 检查API密钥
-        if not os.getenv("MOONSHOT_API_KEY"):
-            raise ValueError("请设置 MOONSHOT_API_KEY 环境变量")
+        if not os.getenv("DEEPSEEK_API_KEY"):
+            raise ValueError("请设置 DEEPSEEK_API_KEY 环境变量")
     
     def initialize_system(self):
         """初始化所有模块"""
@@ -74,7 +75,8 @@ class RecipeRAGSystem:
         self.generation_module = GenerationIntegrationModule(
             model_name=self.config.llm_model,
             temperature=self.config.temperature,
-            max_tokens=self.config.max_tokens
+            max_tokens=self.config.max_tokens,
+            api_base=self.config.deepseek_api_base
         )
 
         print("✅ 系统初始化完成！")
