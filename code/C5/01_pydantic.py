@@ -5,6 +5,13 @@ from pydantic import BaseModel, Field
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_deepseek import ChatDeepSeek
 
+from dotenv import load_dotenv
+load_dotenv()
+
+# 1. 定义数据模式
+# 2. 使用pydantic限制字段类型
+# 3. 使用langchain提供的PydanticOutputParser：核心是构建包含json schema的prompt + few shot
+
 # 初始化 LLM
 llm = ChatDeepSeek(
     model="deepseek-chat",
@@ -28,9 +35,11 @@ prompt = PromptTemplate(
 )
 
 # # 打印格式指令
-# print("\n--- Format Instructions ---")
-# print(parser.get_format_instructions())
-# print("--------------------------\n")
+print("\n--- Format Instructions ---")
+print(parser.get_format_instructions())
+print("--------------------------\n")
+
+
 
 # 4. 创建处理链
 chain = prompt | llm | parser
@@ -48,3 +57,15 @@ print("--------------------\n")
 print(f"姓名: {result.name}")
 print(f"年龄: {result.age}")
 print(f"技能: {result.skills}")
+
+# --- Format Instructions ---
+# The output should be formatted as a JSON instance that conforms to the JSON schema below.
+
+# As an example, for the schema {"properties": {"foo": {"title": "Foo", "description": "a list of strings", "type": "array", "items": {"type": "string"}}}, "required": ["foo"]}
+# the object {"foo": ["bar", "baz"]} is a well-formatted instance of the schema. The object {"properties": {"foo": ["bar", "baz"]}} is not well-formatted.
+
+# Here is the output schema:
+# ```
+# {"properties": {"name": {"description": "人物姓名", "title": "Name", "type": "string"}, "age": {"description": "人物年龄", "title": "Age", "type": "integer"}, "skills": {"description": "技能列表", "items": {"type": "string"}, "title": "Skills", "type": "array"}}, "required": ["name", "age", "skills"]}
+# ```
+# --------------------------
