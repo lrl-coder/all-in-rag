@@ -73,3 +73,5 @@ rag/
 *.secret
 
 llamaindex_index_store/
+conda环境
+tests/
