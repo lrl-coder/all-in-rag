@@ -99,7 +99,7 @@ class IntelligentQueryRouter:
         - graph_rag: 适合复杂关系推理和知识发现
         - combined: 需要两种策略结合
         
-        返回JSON格式：
+        返回JSON格式，只返回合法 JSON 对象，不要 Markdown，不要解释文字。：
         {{
             "query_complexity": 0.6,
             "relationship_intensity": 0.8,
@@ -119,6 +119,8 @@ class IntelligentQueryRouter:
                 max_tokens=800
             )
             
+            print(f"{'='*10}llm路由分析{'='*10}")
+            print(response)
             result = json.loads(response.choices[0].message.content.strip())
             
             analysis = QueryAnalysis(
