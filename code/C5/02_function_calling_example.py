@@ -1,6 +1,9 @@
 from openai import OpenAI
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # 初始化 OpenAI 客户端
 client = OpenAI(
     api_key=os.getenv("DEEPSEEK_API_KEY"),
@@ -10,7 +13,7 @@ client = OpenAI(
 # 定义一个函数，用于发送消息并获取模型的响应
 def send_messages(messages, tools=None):
     response = client.chat.completions.create(
-        model="deepseek-chat",
+        model="deepseek-v4-pro",
         messages=messages,
         tools=tools,
         tool_choice="auto",  # 让模型自主决定是否调用工具
@@ -39,7 +42,7 @@ tools = [
 ]
 
 # 1. 用户提问，模型决策调用工具
-messages = [{"role": "user", "content": "杭州今天天气怎么样？"}]
+messages = [{"role": "user", "content": "西安今天天气怎么样？"}]
 print(f"User> {messages[0]['content']}\n")
 message = send_messages(messages, tools=tools)
 
@@ -69,3 +72,14 @@ if message.tool_calls:
 else:
     # 如果模型没有调用工具，直接打印其回答
     print(f"Model> {message.content}")
+
+# User> 西安今天天气怎么样？
+
+# --- 模型发起了工具调用 ---
+# 工具名称: get_weather
+# 工具参数: {"location": "西安市, 陕西省"}
+# --- 执行工具并返回结果 ---
+# 工具执行结果: 24℃，晴朗
+
+# --- 将工具结果返回给模型，获取最终答案 ---
+# Model> 西安今天天气**晴朗**，气温**24℃**，是个不错的好天气！适合出门走走。
