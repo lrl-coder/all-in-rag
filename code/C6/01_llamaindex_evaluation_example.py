@@ -13,7 +13,19 @@ from llama_index.core.evaluation import (
 from llama_index.core.evaluation.eval_utils import get_results_df
 from llama_index.core.evaluation import DatasetGenerator, QueryResponseDataset
 
-Settings.llm = DeepSeek(model="deepseek-chat", temperature=0.1, api_key=os.getenv("DEEPSEEK_API_KEY"))
+from dotenv import load_dotenv
+load_dotenv()
+
+"""
+rag 评估三元组：
+1. 上下文相关性：检索到的内容是否与用户的查询高度相关？
+    精确率、召回率、F1分数、平均倒数排名
+2. 忠实度：生成的答案是否基于所提供的上下文信息
+3. 答案相关性：最终生成的答案是否直接、完整且有效地回答了用户的原始问题
+    2、3：大模型、词汇重叠指标
+"""
+
+Settings.llm = DeepSeek(model="deepseek-v4-pro", temperature=0.1, api_key=os.getenv("DEEPSEEK_API_KEY"))
 Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en")
 
 async def main():
@@ -123,3 +135,15 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# ============================================================
+# 响应评估结果对比
+# ============================================================
+
+# 句子窗口检索:
+#   忠实度: 26.7%
+#   相关性: 100.0%
+
+# 常规分块检索:
+#   忠实度: 26.7%
+#   相关性: 100.0%
