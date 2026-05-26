@@ -49,35 +49,46 @@
       </figure>
     </section>
 
-    <section id="features" class="feature-grid">
-      <article
-        v-for="feature in features"
-        :key="feature.title"
-        class="glass-card feature-card"
-      >
-        <span class="feature-icon"><component :is="feature.icon" /></span>
-        <h2>{{ feature.title }}</h2>
-        <p>{{ feature.text }}</p>
-      </article>
+    <section id="features" class="architecture">
+      <div class="section-heading">
+        <p class="eyebrow">Capabilities</p>
+        <h2>
+          &#x56F4;&#x7ED5;&#x95EE;&#x7B54;&#x94FE;&#x8DEF;&#x7EC4;&#x7EC7;&#x7684;
+          <span>&#x6838;&#x5FC3;&#x80FD;&#x529B;</span>
+        </h2>
+      </div>
+      <div class="architecture-grid">
+        <article
+          v-for="feature in features"
+          :key="feature.title"
+          class="glass-card arch-card"
+        >
+          <span>{{ feature.tag }}</span>
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.text }}</p>
+        </article>
+      </div>
     </section>
 
-    <section id="workflow" class="split-section glass-card">
-      <div>
+    <section id="workflow" class="architecture">
+      <div class="section-heading">
         <p class="eyebrow">Workflow</p>
-        <h2>从图数据到可解释回答</h2>
-        <p>
-          控制台把原本命令行中的初始化、构建知识库、智能问答和路由分析拆成清晰步骤，适合演示、调试和教学。
-        </p>
+        <h2>
+          &#x4ECE;&#x56FE;&#x6570;&#x636E;&#x5230;&#x53EF;&#x89E3;&#x91CA;&#x7684;
+          <span>&#x56DE;&#x7B54;&#x6D41;&#x7A0B;</span>
+        </h2>
       </div>
-      <ol class="workflow-list">
-        <li v-for="step in workflow" :key="step.title">
+      <div class="architecture-grid">
+        <article
+          v-for="step in workflow"
+          :key="step.title"
+          class="glass-card arch-card"
+        >
           <span>{{ step.no }}</span>
-          <div>
-            <strong>{{ step.title }}</strong>
-            <p>{{ step.text }}</p>
-          </div>
-        </li>
-      </ol>
+          <h3>{{ step.title }}</h3>
+          <p>{{ step.text }}</p>
+        </article>
+      </div>
     </section>
 
     <section id="architecture" class="architecture">
@@ -113,34 +124,27 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from "vue";
-import {
-  Bot,
-  Database,
-  GitBranch,
-  Network,
-  Route,
-  Sparkles,
-} from "lucide-vue-next";
+import { Network } from "lucide-vue-next";
 import graphImage from "./assets/main-ui.jpg";
 
 const features = [
   {
-    icon: Route,
+    tag: "Route",
     title: "智能路由",
     text: "根据问题复杂度与关系密度，自动选择传统混合检索、Graph RAG 或组合策略。",
   },
   {
-    icon: GitBranch,
+    tag: "Graph",
     title: "图结构推理",
     text: "利用菜谱、食材、步骤和关系路径，支持替换、搭配、步骤关联等推理型问题。",
   },
   {
-    icon: Bot,
+    tag: "Stream",
     title: "流式问答",
     text: "回答以 Markdown 形式实时输出，适合展示长步骤、菜谱列表和结构化建议。",
   },
   {
-    icon: Database,
+    tag: "Observe",
     title: "知识库可观测",
     text: "可视化查看菜谱、食材、文本块、检索路由和系统状态，调试更直观。",
   },
