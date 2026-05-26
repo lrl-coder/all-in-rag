@@ -288,7 +288,7 @@ def sse_event(event: str, data: Dict[str, Any]) -> str:
 
 
 service = GraphRAGWebService()
-app = Flask(__name__, static_folder=str(FRONTEND_DIST), static_url_path="")
+app = Flask(__name__, static_folder=None)
 
 
 def json_error(message: str, status_code: int = 400):
@@ -392,6 +392,8 @@ def explain_routing():
 @app.route("/<path:path>")
 def serve_frontend(path: str):
     if FRONTEND_DIST.exists():
+        if path in {"promo", "promo/"} and (FRONTEND_DIST / "promo.html").exists():
+            return send_from_directory(FRONTEND_DIST, "promo.html")
         target = FRONTEND_DIST / path
         if path and target.exists():
             return send_from_directory(FRONTEND_DIST, path)
