@@ -41,34 +41,54 @@ button {
 }
 
 .shell {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
+  overflow: hidden;
   background:
     linear-gradient(135deg, rgba(64, 120, 168, 0.14), transparent 34%),
     linear-gradient(315deg, rgba(58, 139, 114, 0.12), transparent 42%),
     linear-gradient(180deg, #f8fbfc 0%, #eaf2f5 100%);
 }
 
+.shell.sidebar-collapsed {
+  grid-template-columns: 84px minmax(0, 1fr);
+}
+
 .sidebar {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: auto;
   padding: 24px 18px;
   border-right: 1px solid rgba(255, 255, 255, 0.74);
   background: rgba(247, 251, 252, 0.64);
   backdrop-filter: blur(22px) saturate(150%);
   box-shadow: 10px 0 28px rgba(92, 115, 132, 0.1);
+  transition: padding 180ms ease;
+}
+
+.sidebar-collapsed .sidebar {
+  overflow-x: hidden;
+  padding: 24px 12px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   box-shadow: var(--shadow-soft);
+}
+
+.sidebar-collapsed .brand {
+  justify-content: center;
+  padding: 5px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
 .brand-mark {
@@ -80,6 +100,51 @@ button {
   background: linear-gradient(145deg, rgba(64, 120, 168, 0.96), rgba(58, 139, 114, 0.92));
   color: white;
   box-shadow: 8px 8px 18px rgba(84, 108, 127, 0.22), -6px -6px 14px rgba(255, 255, 255, 0.82);
+}
+
+.brand-copy {
+  min-width: 0;
+}
+
+.brand-copy h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.collapse-btn {
+  width: 100%;
+  min-height: 38px;
+  margin: 0 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--blue);
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 5px 6px 14px rgba(104, 126, 145, 0.12), -4px -4px 12px rgba(255, 255, 255, 0.82);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.collapse-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 7px 8px 18px rgba(104, 126, 145, 0.16), -5px -5px 14px rgba(255, 255, 255, 0.9);
+}
+
+.sidebar-collapsed .brand-copy {
+  display: none;
+}
+
+.sidebar-collapsed .collapse-btn {
+  width: 48px;
+  height: 42px;
+  margin: 0 auto 18px;
+}
+
+.sidebar-collapsed .collapse-btn span {
+  display: none;
 }
 
 .brand p,
@@ -117,6 +182,16 @@ button {
   padding: 0 12px;
   text-align: left;
   transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.sidebar-collapsed .nav button {
+  min-height: 48px;
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar-collapsed .nav button span {
+  display: none;
 }
 
 .nav button:hover,
@@ -160,10 +235,25 @@ svg {
   padding: 16px;
 }
 
+.sidebar-collapsed .status-block {
+  display: grid;
+  justify-items: center;
+  padding: 14px 8px;
+}
+
 .status-row {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.sidebar-collapsed .status-row {
+  gap: 0;
+}
+
+.sidebar-collapsed .status-row strong,
+.sidebar-collapsed .status-block p {
+  display: none;
 }
 
 .pulse {
@@ -181,7 +271,12 @@ svg {
 
 .workspace {
   min-width: 0;
+  min-height: 0;
+  height: 100vh;
   padding: 24px;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .topbar {
@@ -247,10 +342,14 @@ button:disabled {
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 18px;
   align-items: start;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .chat-panel {
-  min-height: calc(100vh - 142px);
+  min-height: 0;
+  height: 100%;
   display: grid;
   grid-template-rows: minmax(300px, 1fr) auto;
   overflow: hidden;
@@ -259,6 +358,33 @@ button:disabled {
 .messages {
   overflow: auto;
   padding: 18px;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(64, 120, 168, 0.42) rgba(255, 255, 255, 0.34);
+}
+
+.messages::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.messages::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+  box-shadow: var(--inner);
+}
+
+.messages::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(64, 120, 168, 0.62), rgba(58, 139, 114, 0.52));
+}
+
+.messages::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(64, 120, 168, 0.78), rgba(58, 139, 114, 0.68));
 }
 
 .message {
@@ -297,11 +423,11 @@ button:disabled {
   word-break: break-word;
 }
 
-.markdown-body > :first-child {
+.markdown-body> :first-child {
   margin-top: 0;
 }
 
-.markdown-body > :last-child {
+.markdown-body> :last-child {
   margin-bottom: 0;
 }
 
@@ -427,6 +553,7 @@ button:disabled {
 }
 
 @keyframes typingPulse {
+
   0%,
   100% {
     opacity: 0.35;
@@ -459,6 +586,7 @@ button:disabled {
   border-top: 1px solid var(--line);
   padding: 14px;
   background: rgba(246, 250, 251, 0.72);
+  backdrop-filter: blur(14px);
 }
 
 .composer textarea,
@@ -475,7 +603,7 @@ button:disabled {
 
 .composer textarea,
 .analysis-input {
-  min-height: 118px;
+  /* min-height: 118px; */
   resize: vertical;
   padding: 13px;
 }
@@ -524,7 +652,7 @@ button:disabled {
   transition: transform 160ms ease, background 160ms ease;
 }
 
-.switch input:checked + span::after {
+.switch input:checked+span::after {
   transform: translateX(18px);
   background: var(--green);
 }
@@ -535,6 +663,41 @@ button:disabled {
 .two-column {
   display: grid;
   gap: 16px;
+  min-height: 0;
+  overflow: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(64, 120, 168, 0.42) rgba(255, 255, 255, 0.34);
+}
+
+.inspector {
+  max-height: 100%;
+  align-content: start;
+}
+
+.inspector::-webkit-scrollbar,
+.dashboard-grid::-webkit-scrollbar,
+.config-grid::-webkit-scrollbar,
+.two-column::-webkit-scrollbar {
+  width: 10px;
+}
+
+.inspector::-webkit-scrollbar-track,
+.dashboard-grid::-webkit-scrollbar-track,
+.config-grid::-webkit-scrollbar-track,
+.two-column::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+  box-shadow: var(--inner);
+}
+
+.inspector::-webkit-scrollbar-thumb,
+.dashboard-grid::-webkit-scrollbar-thumb,
+.config-grid::-webkit-scrollbar-thumb,
+.two-column::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(64, 120, 168, 0.62), rgba(58, 139, 114, 0.52));
 }
 
 .metric-card {
@@ -547,6 +710,26 @@ button:disabled {
   margin-top: 14px;
   font-size: 32px;
   color: var(--blue);
+}
+
+.compact-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.compact-metrics .metric-card {
+  min-height: 72px;
+  padding: 12px;
+}
+
+.compact-metrics .metric-card span {
+  font-size: 11px;
+}
+
+.compact-metrics .metric-card strong {
+  margin-top: 8px;
+  font-size: 24px;
 }
 
 .quick-card,
@@ -756,13 +939,66 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .shell.sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar {
+    height: auto;
     min-height: auto;
     position: sticky;
     top: 0;
     z-index: 2;
     border-right: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.72);
+  }
+
+  .sidebar-collapsed .sidebar {
+    padding: 24px 18px;
+  }
+
+  .sidebar-collapsed .brand {
+    justify-content: flex-start;
+    padding: 5px;
+    border-color: var(--line);
+    background: var(--panel);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .sidebar-collapsed .brand-copy,
+  .sidebar-collapsed .nav button span,
+  .sidebar-collapsed .status-row strong,
+  .sidebar-collapsed .status-block p {
+    display: initial;
+  }
+
+  .sidebar-collapsed .collapse-btn {
+    width: 100%;
+    height: 38px;
+    margin-left: auto;
+    transform: none;
+  }
+
+  .sidebar-collapsed .collapse-btn span {
+    display: inline;
+  }
+
+  .sidebar-collapsed .nav {
+    margin-top: 0;
+  }
+
+  .sidebar-collapsed .nav button {
+    justify-content: flex-start;
+    padding: 0 12px;
+  }
+
+  .sidebar-collapsed .status-block {
+    display: block;
+    padding: 16px;
+  }
+
+  .sidebar-collapsed .status-row {
+    gap: 10px;
   }
 
   .nav {
@@ -781,6 +1017,7 @@ button:disabled {
 }
 
 @media (max-width: 680px) {
+
   .workspace,
   .sidebar {
     padding: 16px;
