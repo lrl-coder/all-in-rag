@@ -49,7 +49,10 @@
               </div>
               <div class="bubble">
                 <p class="message-meta">{{ message.role === "user" ? "你" : "RAG 助手" }}</p>
-                <div class="answer" v-html="formatAnswer(message.content)"></div>
+                <div class="answer markdown-body" v-html="renderMarkdown(message.content)"></div>
+                <div v-if="message.streaming" class="typing-indicator">
+                  <span></span><span></span><span></span>
+                </div>
                 <div v-if="message.analysis" class="analysis-strip">
                   <span>{{ strategyLabel(message.analysis.recommended_strategy) }}</span>
                   <span>复杂度 {{ percent(message.analysis.query_complexity) }}</span>
@@ -120,9 +123,11 @@
           <div v-if="routeAnalysis" class="analysis-card">
             <strong>{{ strategyLabel(routeAnalysis.recommended_strategy) }}</strong>
             <p>{{ routeAnalysis.reasoning }}</p>
-            <DataBar label="查询复杂度" :value="Math.round(routeAnalysis.query_complexity * 100)" :max="100" />
-            <DataBar label="关系密度" :value="Math.round(routeAnalysis.relationship_intensity * 100)" :max="100" />
-            <DataBar label="置信度" :value="Math.round(routeAnalysis.confidence * 100)" :max="100" />
+            <div class="ring-metrics">
+              <RingMetric label="查询复杂度" :value="routeAnalysis.query_complexity * 100" />
+              <RingMetric label="关系密度" :value="routeAnalysis.relationship_intensity * 100" />
+              <RingMetric label="置信度" :value="routeAnalysis.confidence * 100" />
+            </div>
           </div>
           <p v-else class="muted-text">等待分析结果。</p>
         </div>
@@ -170,8 +175,16 @@ import {
   Trash2,
   User,
 } from "lucide-vue-next";
+import MarkdownIt from "markdown-it";
 import MetricCard from "./components/MetricCard.vue";
 import DataBar from "./components/DataBar.vue";
+import RingMetric from "./components/RingMetric.vue";
+
+const markdown = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true,
+});
 
 const activeView = ref("chat");
 const status = ref({ ready: false, initialized: false, operation: {} });
@@ -287,27 +300,85 @@ async function askQuestion() {
   const text = question.value.trim();
   if (!text) return;
   messages.value.push({ id: newId(), role: "user", content: text });
+  const assistantMessage = {
+    id: newId(),
+    role: "assistant",
+    content: "",
+    analysis: null,
+    streaming: true,
+  };
+  messages.value.push(assistantMessage);
   question.value = "";
   busy.value = true;
   await scrollToBottom();
   try {
-    const response = await api("/api/chat", {
-      method: "POST",
-      body: JSON.stringify({ question: text, explain_routing: explainRouting.value }),
-    });
-    messages.value.push({
-      id: newId(),
-      role: "assistant",
-      content: response.answer,
-      analysis: response.analysis,
-    });
-    stats.value = response.stats;
+    await streamQuestion(text, assistantMessage);
   } catch (error) {
-    messages.value.push({ id: newId(), role: "assistant", content: `问答失败：${error.message}` });
+    assistantMessage.content = `问答失败：${error.message}`;
   } finally {
+    assistantMessage.streaming = false;
     busy.value = false;
     await loadEverything();
     await scrollToBottom();
+  }
+}
+
+async function streamQuestion(text, assistantMessage) {
+  const response = await fetch("/api/chat/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question: text, explain_routing: explainRouting.value }),
+  });
+
+  if (!response.ok || !response.body) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || "流式请求失败");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split("\n\n");
+    buffer = blocks.pop() || "";
+
+    for (const block of blocks) {
+      await handleStreamEvent(block, assistantMessage);
+    }
+  }
+
+  if (buffer.trim()) {
+    await handleStreamEvent(buffer, assistantMessage);
+  }
+}
+
+async function handleStreamEvent(block, assistantMessage) {
+  const eventLine = block.split("\n").find((line) => line.startsWith("event:"));
+  const dataLines = block.split("\n").filter((line) => line.startsWith("data:"));
+  const event = eventLine ? eventLine.slice(6).trim() : "message";
+  const dataText = dataLines.map((line) => line.slice(5).trimStart()).join("\n");
+  if (!dataText) return;
+
+  const data = JSON.parse(dataText);
+  if (event === "meta") {
+    assistantMessage.analysis = data.analysis;
+  } else if (event === "chunk") {
+    assistantMessage.content += data.text || "";
+    await scrollToBottom();
+  } else if (event === "done") {
+    assistantMessage.analysis = data.analysis || assistantMessage.analysis;
+    assistantMessage.streaming = false;
+    if (data.stats) {
+      stats.value = data.stats;
+    }
+  } else if (event === "error") {
+    assistantMessage.streaming = false;
+    assistantMessage.content += assistantMessage.content ? `\n\n${data.error}` : `问答失败：${data.error}`;
   }
 }
 
@@ -347,12 +418,8 @@ function strategyLabel(strategy) {
   return labels[strategy] || strategy || "未知策略";
 }
 
-function formatAnswer(text = "") {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\n/g, "<br />");
+function renderMarkdown(text = "") {
+  return markdown.render(text);
 }
 
 function newId() {

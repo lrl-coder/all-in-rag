@@ -11,11 +11,12 @@ import threading
 import time
 import traceback
 import mimetypes
+import json
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory, stream_with_context
 
 CURRENT_DIR = Path(__file__).resolve().parent
 FRONTEND_DIST = CURRENT_DIR / "frontend" / "dist"
@@ -180,6 +181,38 @@ class GraphRAGWebService:
                 "stats": self.stats(),
             }
 
+    def stream_answer(self, question: str):
+        start_time = time.time()
+        with self._lock:
+            if not self._system or not self._system.system_ready:
+                yield sse_event("error", {"error": "系统未就绪，请先初始化并构建知识库"})
+                return
+
+            try:
+                relevant_docs, analysis = self._system.query_router.route_query(question, self._config.top_k)
+                yield sse_event("meta", {
+                    "question": question,
+                    "analysis": serialize_analysis(analysis),
+                })
+
+                if not relevant_docs:
+                    yield sse_event("chunk", {
+                        "text": "抱歉，没有找到相关的烹饪信息。请尝试其他问题。",
+                    })
+                else:
+                    for chunk_text in self._system.generation_module.generate_adaptive_answer_stream(question, relevant_docs):
+                        if chunk_text:
+                            yield sse_event("chunk", {"text": chunk_text})
+
+                yield sse_event("done", {
+                    "elapsed_seconds": round(time.time() - start_time, 3),
+                    "analysis": serialize_analysis(analysis),
+                    "stats": self.stats(),
+                })
+            except Exception as exc:
+                self._last_error = traceback.format_exc()
+                yield sse_event("error", {"error": str(exc), "traceback": self._last_error})
+
     def explain_routing(self, question: str) -> Dict[str, Any]:
         with self._lock:
             if not self._system or not self._system.query_router:
@@ -247,6 +280,11 @@ def empty_stats() -> Dict[str, Any]:
         },
         "graph_index": {},
     }
+
+
+def sse_event(event: str, data: Dict[str, Any]) -> str:
+    payload = json.dumps(data, ensure_ascii=False)
+    return f"event: {event}\ndata: {payload}\n\n"
 
 
 service = GraphRAGWebService()
@@ -320,6 +358,22 @@ def chat():
         return jsonify({"ok": True, **result})
     except Exception as exc:
         return json_error(str(exc))
+
+
+@app.post("/api/chat/stream")
+def chat_stream():
+    payload = request.get_json(force=True) or {}
+    question = (payload.get("question") or "").strip()
+    if not question:
+        return json_error("问题不能为空")
+
+    response = Response(
+        stream_with_context(service.stream_answer(question)),
+        mimetype="text/event-stream",
+    )
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["X-Accel-Buffering"] = "no"
+    return response
 
 
 @app.post("/api/routing/explain")
